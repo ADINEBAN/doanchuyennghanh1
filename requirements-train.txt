@@ -1,0 +1,5 @@
+tensorflow>=2.16.1
+keras>=3.10.0
+numpy>=1.26.4
+matplotlib>=3.9.0
+pytest>=8.2.0

@@ -1,0 +1,9 @@
+PyQt6>=6.7.0
+opencv-python>=4.10.0.84
+mediapipe==0.10.14
+numpy>=1.26.4
+matplotlib>=3.9.0
+supabase>=2.5.1
+python-dotenv>=1.0.1
+pytest>=8.2.0
+pyinstaller>=6.6.0
