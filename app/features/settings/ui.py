@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QSpinBox,
     QVBoxLayout,
+    QLabel,
 )
 
 from app.shared.core.app_state import UserSettingsState
@@ -23,8 +24,8 @@ class SettingsWindow(QDialog):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("Settings")
-        self.resize(520, 420)
+        self.setWindowTitle("Cài đặt")
+        self.resize(620, 520)
         self._user_id = ""
 
         self.ear_threshold = QDoubleSpinBox()
@@ -52,30 +53,44 @@ class SettingsWindow(QDialog):
 
         self.selected_model_name = QLineEdit()
         self.alert_sound_path = QLineEdit()
-        self.alert_sound_enabled = QCheckBox("Enable alert sound")
+        self.alert_sound_enabled = QCheckBox("Bật âm thanh cảnh báo")
+
+        title = QLabel("Cài đặt giám sát")
+        title.setStyleSheet("font-size: 20px; font-weight: 800; color: #172033;")
+        subtitle = QLabel("Thay đổi sẽ áp dụng từ phiên giám sát tiếp theo")
+        subtitle.setStyleSheet("color: #64748b;")
 
         form = QFormLayout()
-        form.addRow("EAR threshold", self.ear_threshold)
-        form.addRow("EAR consecutive frames", self.ear_consec_frames)
-        form.addRow("MAR threshold", self.mar_threshold)
-        form.addRow("Yawn consecutive frames", self.yawn_consec_frames)
-        form.addRow("AI prediction interval", self.ai_prediction_interval)
-        form.addRow("Drowsy alert seconds", self.drowsy_alert_seconds)
+        form.setSpacing(12)
+        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+        form.addRow("Ngưỡng EAR", self.ear_threshold)
+        form.addRow("Số frame nhắm mắt", self.ear_consec_frames)
+        form.addRow("Ngưỡng MAR", self.mar_threshold)
+        form.addRow("Số frame ngáp", self.yawn_consec_frames)
+        form.addRow("Chu kỳ dự đoán AI", self.ai_prediction_interval)
+        form.addRow("Giây cảnh báo buồn ngủ", self.drowsy_alert_seconds)
         form.addRow("Camera index", self.camera_index)
-        form.addRow("Model name", self.selected_model_name)
-        form.addRow("Alert sound path", self.alert_sound_path)
+        form.addRow("Tên model", self.selected_model_name)
+        form.addRow("Đường dẫn âm thanh", self.alert_sound_path)
         form.addRow("", self.alert_sound_enabled)
 
-        save_button = QPushButton("Save")
-        close_button = QPushButton("Close")
+        save_button = QPushButton("Lưu")
+        close_button = QPushButton("Đóng")
+        save_button.setObjectName("primaryButton")
+        close_button.setObjectName("secondaryButton")
         save_button.clicked.connect(self._submit)
         close_button.clicked.connect(self.close)
 
         actions = QHBoxLayout()
+        actions.addStretch()
         actions.addWidget(save_button)
         actions.addWidget(close_button)
 
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(18, 18, 18, 18)
+        layout.setSpacing(12)
+        layout.addWidget(title)
+        layout.addWidget(subtitle)
         layout.addLayout(form)
         layout.addLayout(actions)
 

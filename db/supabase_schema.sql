@@ -150,7 +150,7 @@ CREATE TABLE IF NOT EXISTS alerts (
     vehicle_id UUID REFERENCES vehicles(id) ON DELETE SET NULL,
     alert_type TEXT NOT NULL
         CHECK (alert_type IN (
-            'closed_eyes', 'yawning', 'drowsy', 'distraction', 'face_not_detected'
+            'closed_eyes', 'yawning', 'drowsy', 'distracted', 'face_not_detected'
         )),
     risk_level TEXT NOT NULL DEFAULT 'low'
         CHECK (risk_level IN ('low', 'medium', 'high', 'danger')),

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Optional
 
 import numpy as np
@@ -49,10 +50,16 @@ class FaceFeaturePoints:
             self.head_pose = HeadPose()
 
 
+@dataclass
+class _LandmarkListAdapter:
+    landmark: list[Any]
+
+
 class FaceLandmarkDetector:
     def __init__(self) -> None:
         self._face_mesh: Optional[Any] = None
         self._load_error: Optional[str] = None
+        self._backend: str = ""
 
     def _ensure_face_mesh(self) -> Any:
         if self._face_mesh is not None:
@@ -65,23 +72,64 @@ class FaceLandmarkDetector:
             # does not depend on the broader tasks package import path.
             from mediapipe.python.solutions import face_mesh as mp_face_mesh
         except Exception as exc:
+            solutions_error = exc
+        else:
+            self._face_mesh = mp_face_mesh.FaceMesh(
+                static_image_mode=False,
+                max_num_faces=1,
+                refine_landmarks=True,
+                min_detection_confidence=0.5,
+                min_tracking_confidence=0.5,
+            )
+            self._backend = "solutions"
+            return self._face_mesh
+
+        try:
+            from mediapipe.tasks.python import vision
+            from mediapipe.tasks.python.core.base_options import BaseOptions
+        except Exception as exc:
             self._load_error = (
                 "Could not load MediaPipe Face Mesh. "
-                "Check the installed MediaPipe/TensorFlow runtime on this machine."
+                "Check the installed MediaPipe runtime on this machine."
             )
-            raise CameraError(self._load_error) from exc
+            raise CameraError(self._load_error) from solutions_error or exc
 
-        self._face_mesh = mp_face_mesh.FaceMesh(
-            static_image_mode=False,
-            max_num_faces=1,
-            refine_landmarks=True,
-            min_detection_confidence=0.5,
+        model_path = (
+            Path(__file__).resolve().parents[3]
+            / "assets"
+            / "models"
+            / "face_landmarker.task"
+        )
+        if not model_path.exists():
+            self._load_error = (
+                "Missing MediaPipe face landmarker model at "
+                f"{model_path}."
+            )
+            raise CameraError(self._load_error)
+
+        options = vision.FaceLandmarkerOptions(
+            base_options=BaseOptions(model_asset_path=str(model_path)),
+            running_mode=vision.RunningMode.IMAGE,
+            num_faces=1,
+            min_face_detection_confidence=0.5,
+            min_face_presence_confidence=0.5,
             min_tracking_confidence=0.5,
         )
+        self._face_mesh = vision.FaceLandmarker.create_from_options(options)
+        self._backend = "tasks"
         return self._face_mesh
 
     def detect(self, frame_rgb):
         face_mesh = self._ensure_face_mesh()
+        if self._backend == "tasks":
+            import mediapipe as mp
+
+            image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame_rgb)
+            result = face_mesh.detect(image)
+            if not result.face_landmarks:
+                return None
+            return _LandmarkListAdapter(landmark=result.face_landmarks[0])
+
         result = face_mesh.process(frame_rgb)
         if not result.multi_face_landmarks:
             return None

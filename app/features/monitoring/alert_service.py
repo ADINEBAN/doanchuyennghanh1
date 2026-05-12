@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections import Counter, defaultdict
 from datetime import datetime
 from typing import Optional
@@ -10,6 +11,9 @@ from uuid import uuid4
 from app.shared.core.app_state import AlertEvent
 from app.shared.database.supabase_service import SupabaseService
 from app.shared.utils.datetime_helper import utc_now
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class AlertService:
@@ -77,7 +81,10 @@ class AlertService:
         if vehicle_id:
             payload["vehicle_id"] = vehicle_id
 
-        client.table("alerts").insert(payload).execute()
+        try:
+            client.table("alerts").insert(payload).execute()
+        except Exception:
+            LOGGER.exception("Failed to persist alert to Supabase")
         return alert
 
     def list_alerts_for_user(self, user_id: str) -> list[AlertEvent]:

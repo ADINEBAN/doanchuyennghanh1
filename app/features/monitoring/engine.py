@@ -75,7 +75,7 @@ class DrowsinessEngine:
         self.face_not_detected_seconds = face_not_detected_seconds
 
     def evaluate(self, metrics: DetectionMetrics) -> DetectionResult:
-        # ----- Priority 1: DANGER — Prolonged eyes closed (nhắm mắt lâu) -----
+        # ----- Priority 1: DANGER - prolonged eyes closed -----
         if (
             metrics.eyes_closed_frames >= self.ear_consec_frames * 2
             and metrics.ear_value <= self.ear_threshold
@@ -85,10 +85,10 @@ class DrowsinessEngine:
                 risk_level=RISK_DANGER,
                 should_alert=True,
                 alert_type=STATUS_DROWSY,
-                message="NGUY HIEM! Nham mat qua lau. Can dung xe nghi ngoi ngay!",
+                message="NGUY HIỂM! Nhắm mắt quá lâu. Cần dừng xe nghỉ ngơi ngay!",
             )
 
-        # ----- Priority 2: HIGH — Eyes closed -----
+        # ----- Priority 2: HIGH - eyes closed -----
         if (
             metrics.eyes_closed_frames >= self.ear_consec_frames
             and metrics.ear_value <= self.ear_threshold
@@ -98,10 +98,10 @@ class DrowsinessEngine:
                 risk_level=RISK_HIGH,
                 should_alert=True,
                 alert_type=STATUS_CLOSED_EYES,
-                message="Mat da nham qua lau. Canh bao buon ngu!",
+                message="Mắt đã nhắm quá lâu. Cảnh báo buồn ngủ!",
             )
 
-        # ----- Priority 3: HIGH — AI model detects drowsy with high confidence -----
+        # ----- Priority 3: HIGH - AI model detects drowsy with high confidence -----
         if metrics.ai_label.lower() in {STATUS_DROWSY, STATUS_TIRED} and (
             metrics.ai_confidence >= 0.75
             or metrics.drowsy_seconds >= self.drowsy_alert_seconds
@@ -111,20 +111,20 @@ class DrowsinessEngine:
                 risk_level=RISK_HIGH,
                 should_alert=True,
                 alert_type=STATUS_DROWSY,
-                message="AI phat hien nguy co buon ngu cao.",
+                message="AI phát hiện nguy cơ buồn ngủ cao.",
             )
 
-        # ----- Priority 4: HIGH — Face not detected for too long -----
+        # ----- Priority 4: HIGH - face not detected for too long -----
         if metrics.face_not_detected_seconds >= self.face_not_detected_seconds:
             return DetectionResult(
                 status=STATUS_FACE_NOT_DETECTED,
                 risk_level=RISK_HIGH,
                 should_alert=True,
                 alert_type=STATUS_FACE_NOT_DETECTED,
-                message="Khong tim thay khuon mat qua lau. Vui long nhin vao camera.",
+                message="Không tìm thấy khuôn mặt quá lâu. Vui lòng nhìn vào camera.",
             )
 
-        # ----- Priority 5: MEDIUM — Distracted (quay mặt) -----
+        # ----- Priority 5: MEDIUM - distracted -----
         is_looking_away = (
             abs(metrics.head_yaw) > self.head_yaw_threshold
             or abs(metrics.head_pitch) > self.head_pitch_threshold
@@ -135,10 +135,10 @@ class DrowsinessEngine:
                 risk_level=RISK_MEDIUM,
                 should_alert=True,
                 alert_type=STATUS_DISTRACTED,
-                message="Mat tap trung! Dang khong nhin vao duong.",
+                message="Mất tập trung! Bạn đang không nhìn vào đường.",
             )
 
-        # ----- Priority 6: MEDIUM — Yawning -----
+        # ----- Priority 6: MEDIUM - yawning -----
         if (
             metrics.yawn_frames >= self.yawn_consec_frames
             and metrics.mar_value >= self.mar_threshold
@@ -148,17 +148,17 @@ class DrowsinessEngine:
                 risk_level=RISK_MEDIUM,
                 should_alert=True,
                 alert_type=STATUS_YAWNING,
-                message="Phat hien ngap lien tuc.",
+                message="Phát hiện ngáp liên tục.",
             )
 
-        # ----- Priority 7: LOW — Mild fatigue signs from AI -----
+        # ----- Priority 7: LOW - mild fatigue signs from AI -----
         if metrics.ai_label.lower() == STATUS_TIRED:
             return DetectionResult(
                 status=STATUS_TIRED,
                 risk_level=RISK_LOW,
                 should_alert=False,
                 alert_type=None,
-                message="Co dau hieu met moi nhe.",
+                message="Có dấu hiệu mệt mỏi nhẹ.",
             )
 
         # ----- Default: NORMAL -----
@@ -167,5 +167,5 @@ class DrowsinessEngine:
             risk_level=RISK_LOW,
             should_alert=False,
             alert_type=None,
-            message="Trang thai binh thuong.",
+            message="Trạng thái bình thường.",
         )

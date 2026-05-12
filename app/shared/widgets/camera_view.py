@@ -10,12 +10,12 @@ from typing import Optional
 
 class CameraView(QLabel):
     def __init__(self) -> None:
-        super().__init__("Camera preview")
+        super().__init__("Xem trước camera")
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setMinimumSize(720, 405)
         self.setStyleSheet(
-            "background-color: #0f172a; color: #cbd5e1; border: 1px solid #334155; "
-            "border-radius: 12px;"
+            "background-color: #0b1220; color: #cbd5e1; border: 1px solid #1e293b; "
+            "border-radius: 8px; font-size: 15px; font-weight: 600;"
         )
         self._current_pixmap: Optional[QPixmap] = None
 

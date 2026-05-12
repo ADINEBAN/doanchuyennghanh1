@@ -5,7 +5,7 @@ APP_WINDOW_WIDTH = 1240
 APP_WINDOW_HEIGHT = 760
 
 # ---------------------------------------------------------------------------
-# Driver statuses — phân loại trạng thái tài xế
+# Driver statuses
 # ---------------------------------------------------------------------------
 STATUS_NORMAL = "normal"
 STATUS_TIRED = "tired"
@@ -16,7 +16,7 @@ STATUS_DISTRACTED = "distracted"
 STATUS_FACE_NOT_DETECTED = "face_not_detected"
 
 # ---------------------------------------------------------------------------
-# Risk levels — cảnh báo nhiều cấp độ
+# Risk levels
 # ---------------------------------------------------------------------------
 RISK_LOW = "low"
 RISK_MEDIUM = "medium"
@@ -24,7 +24,7 @@ RISK_HIGH = "high"
 RISK_DANGER = "danger"
 
 # ---------------------------------------------------------------------------
-# Alert types — loại cảnh báo lưu DB
+# Alert types stored in the database
 # ---------------------------------------------------------------------------
 ALERT_TYPES = (
     STATUS_CLOSED_EYES,
@@ -42,7 +42,7 @@ ROLE_COMPANY_ADMIN = "COMPANY_ADMIN"
 ROLE_DRIVER = "DRIVER"
 
 # ---------------------------------------------------------------------------
-# Head pose thresholds (degrees) — ngưỡng quay mặt mất tập trung
+# Head pose thresholds in degrees
 # ---------------------------------------------------------------------------
 DEFAULT_HEAD_YAW_THRESHOLD = 30.0
 DEFAULT_HEAD_PITCH_THRESHOLD = 25.0

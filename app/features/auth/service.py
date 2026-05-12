@@ -47,19 +47,75 @@ class AuthService:
         if profile.role != ROLE_DRIVER:
             self.sign_out()
             raise AuthenticationError(
-                "Tai khoan nay khong phai DRIVER. "
-                "Vui long dang nhap tren Web Admin."
+                "Tài khoản này không phải DRIVER. "
+                "Vui lòng đăng nhập trên Web Admin."
             )
 
         if profile.status != "active":
             self.sign_out()
             raise AuthenticationError(
-                "Tai khoan da bi khoa hoac vo hieu hoa. "
-                "Vui long lien he quan tri vien."
+                "Tài khoản đã bị khóa hoặc vô hiệu hóa. "
+                "Vui lòng liên hệ quản trị viên."
             )
 
         self._touch_last_login(auth_user.id)
         return profile
+
+    def register_user(self, full_name: str, email: str, password: str) -> UserProfile:
+        """Create a DRIVER account.
+
+        This is mainly useful for local development and tests. In production,
+        DRIVER accounts should be created by COMPANY_ADMIN from the web admin.
+        """
+        if not email or not password:
+            raise AuthenticationError("Email and password are required.")
+
+        if not self.supabase_service.is_configured():
+            if email in self._local_users:
+                raise AuthenticationError("Email already exists.")
+
+            user = self._build_profile(
+                id=str(uuid4()),
+                email=email,
+                username=self._default_username(email),
+                full_name=full_name,
+                role=ROLE_DRIVER,
+            )
+            self._local_users[email] = {
+                "password": password,
+                **asdict(user),
+            }
+            return user
+
+        client = self.supabase_service.get_client()
+        try:
+            response = client.auth.sign_up(
+                {
+                    "email": email,
+                    "password": password,
+                    "options": {
+                        "data": {
+                            "full_name": full_name,
+                            "username": self._default_username(email),
+                            "role": ROLE_DRIVER,
+                        }
+                    },
+                }
+            )
+        except Exception as exc:
+            raise AuthenticationError(self._map_auth_error(exc)) from exc
+
+        auth_user = response.user
+        if auth_user is None:
+            raise AuthenticationError("Supabase sign-up failed.")
+
+        return self._build_profile(
+            id=auth_user.id,
+            email=auth_user.email or email,
+            username=self._default_username(email),
+            full_name=full_name,
+            role=ROLE_DRIVER,
+        )
 
     def sign_out(self) -> None:
         if not self.supabase_service.is_configured():
@@ -243,7 +299,7 @@ class AuthService:
         message = str(exc)
         lowered = message.lower()
         if "email not confirmed" in lowered:
-            return "Email chua duoc xac nhan trong Supabase."
+            return "Email chưa được xác nhận trong Supabase."
         if "invalid login credentials" in lowered:
-            return "Sai email hoac mat khau."
+            return "Sai email hoặc mật khẩu."
         return message

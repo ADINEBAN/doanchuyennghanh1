@@ -19,13 +19,14 @@ class StatsChart(QWidget):
         self.layout = QVBoxLayout(self)
 
         if FigureCanvas is None or Figure is None:
-            self.placeholder = QLabel("Install matplotlib to render charts.")
+            self.placeholder = QLabel("Cài matplotlib để hiển thị biểu đồ.")
             self.layout.addWidget(self.placeholder)
             self.figure = None
             self.canvas = None
             return
 
         self.figure = Figure(figsize=(6, 3))
+        self.figure.patch.set_facecolor("#ffffff")
         self.canvas = FigureCanvas(self.figure)
         self.layout.addWidget(self.canvas)
 
@@ -41,10 +42,12 @@ class StatsChart(QWidget):
         day_axis = self.figure.add_subplot(121)
         labels = list(alerts_by_day.keys())
         values = list(alerts_by_day.values())
-        day_axis.bar(labels, values, color="#0f766e")
-        day_axis.set_title("Alerts By Day")
-        day_axis.set_ylabel("Count")
+        day_axis.bar(labels, values, color="#2563eb")
+        day_axis.set_title("Cảnh báo theo ngày")
+        day_axis.set_ylabel("Số lượng")
         day_axis.tick_params(axis="x", rotation=25)
+        day_axis.grid(axis="y", color="#e5eaf1")
+        day_axis.set_axisbelow(True)
 
         type_axis = self.figure.add_subplot(122)
         type_data = alerts_by_type or {}
@@ -54,10 +57,11 @@ class StatsChart(QWidget):
                 labels=list(type_data.keys()),
                 autopct="%1.0f%%",
                 startangle=90,
+                colors=["#2563eb", "#0f766e", "#d97706", "#dc2626", "#64748b"],
             )
-            type_axis.set_title("Alert Types")
+            type_axis.set_title("Loại cảnh báo")
         else:
-            type_axis.text(0.5, 0.5, "No alert type data", ha="center", va="center")
+            type_axis.text(0.5, 0.5, "Chưa có dữ liệu", ha="center", va="center")
             type_axis.set_axis_off()
 
         self.figure.tight_layout()

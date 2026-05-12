@@ -2,7 +2,15 @@
 
 from __future__ import annotations
 
-from PyQt6.QtWidgets import QDialog, QTableWidget, QTableWidgetItem, QVBoxLayout
+from PyQt6.QtWidgets import (
+    QAbstractItemView,
+    QHeaderView,
+    QLabel,
+    QDialog,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+)
 from typing import Optional
 
 from app.shared.core.app_state import AlertEvent
@@ -12,16 +20,29 @@ from app.shared.utils.datetime_helper import format_datetime
 class HistoryWindow(QDialog):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("Alert History")
-        self.resize(900, 480)
+        self.setWindowTitle("Lịch sử cảnh báo")
+        self.resize(980, 560)
+
+        title = QLabel("Lịch sử cảnh báo")
+        title.setStyleSheet("font-size: 20px; font-weight: 800; color: #172033;")
+        subtitle = QLabel("Các cảnh báo gần đây của tài xế hiện tại")
+        subtitle.setStyleSheet("color: #64748b;")
 
         self.table = QTableWidget(0, 6)
         self.table.setHorizontalHeaderLabels(
-            ["Time", "Type", "Status", "Risk", "EAR", "MAR"]
+            ["Thời gian", "Loại", "Trạng thái", "Rủi ro", "EAR", "MAR"]
         )
-        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.verticalHeader().setVisible(False)
+        self.table.setAlternatingRowColors(True)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
 
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(18, 18, 18, 18)
+        layout.setSpacing(12)
+        layout.addWidget(title)
+        layout.addWidget(subtitle)
         layout.addWidget(self.table)
 
     def set_alerts(self, alerts: list[AlertEvent]) -> None:

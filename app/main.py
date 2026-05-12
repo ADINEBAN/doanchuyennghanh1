@@ -24,6 +24,7 @@ from app.features.monitoring.overlay import draw_contour, draw_monitoring_overla
 from app.features.monitoring.session_service import SessionService
 from app.features.monitoring.ui import DashboardWindow
 from app.features.monitoring.webcam import WebcamManager
+from app.features.profile.ui import ProfileWindow
 from app.features.settings.service import SettingsService
 from app.features.settings.ui import SettingsWindow
 from app.features.statistics.ui import StatisticsWindow
@@ -67,6 +68,7 @@ class AppController:
         self.history_window = HistoryWindow()
         self.statistics_window = StatisticsWindow()
         self.settings_window = SettingsWindow()
+        self.profile_window = ProfileWindow()
         self.webcam_manager: Optional[WebcamManager] = None
         self.landmark_detector = FaceLandmarkDetector()
         self.drowsiness_engine: Optional[DrowsinessEngine] = None
@@ -106,6 +108,7 @@ class AppController:
         self.dashboard_window.history_requested.connect(self.show_history)
         self.dashboard_window.statistics_requested.connect(self.show_statistics)
         self.dashboard_window.settings_requested.connect(self.show_settings)
+        self.dashboard_window.profile_requested.connect(self.show_profile)
         self.dashboard_window.logout_requested.connect(self.handle_logout)
 
         self.settings_window.save_requested.connect(self.save_settings)
@@ -149,7 +152,7 @@ class AppController:
         self.dashboard_window.update_detection_state(
             status="normal",
             risk_level="low",
-            message="San sang bat dau giam sat.",
+            message="Sẵn sàng bắt đầu giám sát.",
         )
         self.login_window.hide()
         self.dashboard_window.show()
@@ -243,7 +246,7 @@ class AppController:
         self.dashboard_window.update_detection_state(
             status="normal",
             risk_level="low",
-            message="Phien giam sat da bat dau. Webcam dang hoat dong.",
+            message="Phiên giám sát đã bắt đầu. Webcam đang hoạt động.",
         )
         LOGGER.info("Started session %s", self.state.current_session.id)
 
@@ -253,7 +256,7 @@ class AppController:
         self._reset_detection_state()
 
         if self.state.current_session is None:
-            self.dashboard_window.camera_view.show_message("Camera preview")
+            self.dashboard_window.camera_view.show_message("Xem trước camera")
             return
 
         session_alerts = self.alert_service.list_alerts_for_session(self.state.current_session.id)
@@ -266,16 +269,16 @@ class AppController:
             closed_eyes_count=int(type_counts.get("closed_eyes", 0)),
             yawning_count=int(type_counts.get("yawning", 0)),
             drowsy_count=int(type_counts.get("drowsy", 0)),
-            distraction_count=int(type_counts.get("distraction", 0)),
+            distraction_count=int(type_counts.get("distracted", 0)),
             face_not_detected_count=int(type_counts.get("face_not_detected", 0)),
         )
         self.dashboard_window.set_session_status("stopped")
         self.dashboard_window.update_detection_state(
             status="normal",
             risk_level="low",
-            message=f"Phien giam sat da dung. Tong canh bao: {total_alerts}.",
+            message=f"Phiên giám sát đã dừng. Tổng cảnh báo: {total_alerts}.",
         )
-        self.dashboard_window.camera_view.show_message("Da dung giam sat.")
+        self.dashboard_window.camera_view.show_message("Đã dừng giám sát.")
         self.state.current_session = None
 
     # ------------------------------------------------------------------
@@ -307,13 +310,24 @@ class AppController:
         self.settings_window.load_settings(settings_state)
         self.settings_window.show()
 
+    def show_profile(self) -> None:
+        if self.state.current_user is None:
+            return
+
+        self.profile_window.set_profile(
+            self.state.current_user,
+            self.state.current_company,
+            self.state.current_vehicle,
+        )
+        self.profile_window.show()
+
     def save_settings(self, settings_state: UserSettingsState) -> None:
         self.state.current_settings = self.settings_service.update_settings(settings_state)
         self.settings_window.close()
         self.dashboard_window.update_detection_state(
             status="normal",
             risk_level="low",
-            message="Cai dat da luu. Thay doi se ap dung o phien giam sat tiep theo.",
+            message="Cài đặt đã lưu. Thay đổi sẽ áp dụng ở phiên giám sát tiếp theo.",
         )
 
     # ------------------------------------------------------------------
@@ -403,7 +417,7 @@ class AppController:
 
             return
 
-        # Face detected — reset face_not_detected timer
+        # Face detected - reset face_not_detected timer
         self._face_not_detected_since = None
 
         feature_points = self.landmark_detector.extract_feature_points(

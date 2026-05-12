@@ -12,6 +12,26 @@ except ImportError:  # pragma: no cover - optional before deps are installed
     load_dotenv = None
 
 
+def _load_env_file(env_file: str) -> None:
+    """Load .env values even when python-dotenv is not installed yet."""
+    if load_dotenv is not None:
+        load_dotenv(env_file)
+        return
+
+    env_path = Path(env_file)
+    if not env_path.is_absolute():
+        env_path = Path.cwd() / env_path
+    if not env_path.exists():
+        return
+
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        name, value = stripped.split("=", 1)
+        os.environ.setdefault(name.strip(), value.strip().strip('"').strip("'"))
+
+
 def _get_float(name: str, default: float) -> float:
     try:
         return float(os.getenv(name, str(default)))
@@ -59,8 +79,7 @@ class AppSettings:
 
 
 def load_settings(env_file: str = ".env") -> AppSettings:
-    if load_dotenv is not None:
-        load_dotenv(env_file)
+    _load_env_file(env_file)
 
     return AppSettings(
         app_env=os.getenv("APP_ENV", "development"),
