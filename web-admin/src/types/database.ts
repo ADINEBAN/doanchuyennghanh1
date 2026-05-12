@@ -43,6 +43,18 @@ export type Company = {
   updated_at: string;
 };
 
+export type CompanyInsert = {
+  name: string;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  logo_url?: string | null;
+  description?: string | null;
+  status?: "active" | "inactive" | "locked";
+};
+
+export type CompanyUpdate = Partial<CompanyInsert>;
+
 export type Vehicle = {
   id: string;
   company_id: string;
@@ -56,6 +68,19 @@ export type Vehicle = {
   created_at: string;
   updated_at: string;
 };
+
+export type VehicleInsert = {
+  company_id: string;
+  license_plate: string;
+  brand?: string | null;
+  model?: string | null;
+  color?: string | null;
+  year?: number | null;
+  status?: VehicleStatus;
+  assigned_driver_id?: string | null;
+};
+
+export type VehicleUpdate = Partial<VehicleInsert>;
 
 export type MonitoringSession = {
   id: string;
@@ -92,14 +117,45 @@ export type Alert = {
   head_pitch: number | null;
 };
 
+export type DriverLiveStatus = {
+  driver_id: string;
+  session_id: string | null;
+  company_id: string | null;
+  vehicle_id: string | null;
+  is_app_online: boolean;
+  is_monitoring: boolean;
+  status: string;
+  risk_level: RiskLevel;
+  ear_value: number | null;
+  mar_value: number | null;
+  head_yaw: number | null;
+  head_pitch: number | null;
+  last_seen_at: string;
+  updated_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
-      profiles: { Row: Profile };
-      companies: { Row: Company };
-      vehicles: { Row: Vehicle };
-      monitoring_sessions: { Row: MonitoringSession };
-      alerts: { Row: Alert };
+      profiles: { Row: Profile; Insert: Partial<Profile>; Update: Partial<Profile> };
+      companies: { Row: Company; Insert: CompanyInsert; Update: CompanyUpdate };
+      vehicles: { Row: Vehicle; Insert: VehicleInsert; Update: VehicleUpdate };
+      monitoring_sessions: {
+        Row: MonitoringSession;
+        Insert: Partial<MonitoringSession>;
+        Update: Partial<MonitoringSession>;
+      };
+      alerts: { Row: Alert; Insert: Partial<Alert>; Update: Partial<Alert> };
+      user_settings: {
+        Row: { id: string; user_id: string };
+        Insert: { user_id: string };
+        Update: { user_id?: string };
+      };
+      driver_live_status: {
+        Row: DriverLiveStatus;
+        Insert: Partial<DriverLiveStatus>;
+        Update: Partial<DriverLiveStatus>;
+      };
     };
   };
 };

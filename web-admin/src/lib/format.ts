@@ -6,6 +6,10 @@ export function formatDateTime(value: string | null | undefined) {
   }).format(new Date(value));
 }
 
+export function formatDateInput(value: Date) {
+  return value.toISOString().slice(0, 10);
+}
+
 export function formatDuration(seconds: number | null | undefined) {
   if (!seconds) return "-";
   const minutes = Math.floor(seconds / 60);

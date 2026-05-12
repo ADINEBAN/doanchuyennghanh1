@@ -17,6 +17,29 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+type QueryResponse<T> = {
+  data: T | null;
+  error: { message: string } | null;
+};
+
+function withTimeout<T>(promise: PromiseLike<T>, timeoutMs = 30000): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timeout = window.setTimeout(() => {
+      reject(new Error("Supabase request timed out"));
+    }, timeoutMs);
+
+    Promise.resolve(promise)
+      .then((result) => {
+        window.clearTimeout(timeout);
+        resolve(result);
+      })
+      .catch((error) => {
+        window.clearTimeout(timeout);
+        reject(error);
+      });
+  });
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
@@ -24,17 +47,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const loadProfile = useCallback(async (userId: string) => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .maybeSingle();
+    try {
+      const { data, error } = await withTimeout<QueryResponse<Profile>>(
+        supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", userId)
+          .maybeSingle(),
+      );
 
-    if (error || !data) {
-      setProfile(null);
-      return;
+      if (error || !data) {
+        setProfile(null);
+        return;
+      }
+      setProfile(data);
+    } catch {
+      // Keep the current profile during transient Supabase/network delays so the
+      // admin UI does not kick the user back to login while the session is valid.
     }
-    setProfile(data);
   }, []);
 
   const refreshProfile = useCallback(async () => {
@@ -46,14 +76,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!mounted) return;
-      setSession(data.session);
-      if (data.session?.user.id) {
-        await loadProfile(data.session.user.id);
-      }
-      setLoading(false);
-    });
+    withTimeout(supabase.auth.getSession(), 6000)
+      .then(async ({ data }) => {
+        if (!mounted) return;
+        setSession(data.session);
+        if (data.session?.user.id) {
+          await loadProfile(data.session.user.id);
+        }
+      })
+      .catch(() => {
+        // Do not clear a browser session just because the initial restore failed.
+      })
+      .finally(() => {
+        if (mounted) {
+          setLoading(false);
+        }
+      });
 
     const { data: subscription } = supabase.auth.onAuthStateChange(
       async (_event, nextSession) => {

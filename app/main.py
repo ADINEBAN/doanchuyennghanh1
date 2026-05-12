@@ -19,6 +19,7 @@ from app.features.monitoring.alert_service import AlertService
 from app.features.monitoring.engine import DetectionMetrics, DrowsinessEngine
 from app.features.monitoring.frame import resize_frame, to_rgb
 from app.features.monitoring.landmark import FaceLandmarkDetector
+from app.features.monitoring.live_status_service import LiveStatusService
 from app.features.monitoring.metrics import eye_aspect_ratio, mouth_aspect_ratio
 from app.features.monitoring.overlay import draw_contour, draw_monitoring_overlay, draw_points
 from app.features.monitoring.session_service import SessionService
@@ -61,6 +62,7 @@ class AppController:
         self.auth_service = AuthService(self.supabase_service)
         self.session_service = SessionService(self.supabase_service)
         self.alert_service = AlertService(self.supabase_service)
+        self.live_status_service = LiveStatusService(self.supabase_service)
         self.settings_service = SettingsService(self.supabase_service, self.settings)
 
         self.login_window = LoginWindow()
@@ -76,6 +78,9 @@ class AppController:
         self.camera_timer = QTimer()
         self.camera_timer.setInterval(33)
         self.camera_timer.timeout.connect(self._pull_camera_frame)
+        self.live_status_timer = QTimer()
+        self.live_status_timer.setInterval(5000)
+        self.live_status_timer.timeout.connect(self._send_live_presence)
 
         # Detection state counters
         self._frame_counter = 0
@@ -84,6 +89,9 @@ class AppController:
         self._status_started_at = time.monotonic()
         self._last_alert_frame = -1000
         self._last_alert_type: Optional[str] = None
+        self._last_live_status_at = 0.0
+        self._last_live_status = "normal"
+        self._last_live_risk_level = "low"
 
         # Distraction / face-not-detected tracking
         self._distracted_since: Optional[float] = None
@@ -145,6 +153,12 @@ class AppController:
         company_name = self.state.current_company.name if self.state.current_company else ""
         vehicle_plate = self.state.current_vehicle.license_plate if self.state.current_vehicle else ""
         self.dashboard_window.set_company_info(company_name, vehicle_plate)
+        self.live_status_service.mark_online(
+            driver_id=user.id,
+            company_id=self.state.current_company.id if self.state.current_company else None,
+            vehicle_id=self.state.current_vehicle.id if self.state.current_vehicle else None,
+        )
+        self.live_status_timer.start()
 
         self.dashboard_window.set_session_status(
             "local mode" if self.state.demo_mode else "connected"
@@ -158,7 +172,11 @@ class AppController:
         self.dashboard_window.show()
 
     def handle_logout(self) -> None:
+        driver_id = self.state.current_user.id if self.state.current_user else None
+        self.live_status_timer.stop()
         self.stop_monitoring()
+        if driver_id:
+            self.live_status_service.mark_offline(driver_id=driver_id)
         self.auth_service.sign_out()
         self.state.current_user = None
         self.state.current_settings = None
@@ -240,6 +258,14 @@ class AppController:
             company_id=company_id,
             vehicle_id=vehicle_id,
         )
+        self.live_status_service.mark_monitoring(
+            driver_id=self.state.current_user.id,
+            session_id=self.state.current_session.id,
+            company_id=company_id,
+            vehicle_id=vehicle_id,
+        )
+        self._last_live_status = "normal"
+        self._last_live_risk_level = "low"
         self._frame_counter = 0
         self.camera_timer.start()
         self.dashboard_window.set_session_status("running")
@@ -271,6 +297,11 @@ class AppController:
             drowsy_count=int(type_counts.get("drowsy", 0)),
             distraction_count=int(type_counts.get("distracted", 0)),
             face_not_detected_count=int(type_counts.get("face_not_detected", 0)),
+        )
+        self.live_status_service.mark_idle(
+            driver_id=self.state.current_session.user_id,
+            company_id=self.state.current_session.company_id,
+            vehicle_id=self.state.current_session.vehicle_id,
         )
         self.dashboard_window.set_session_status("stopped")
         self.dashboard_window.update_detection_state(
@@ -415,6 +446,13 @@ class AppController:
             if detection_result.should_alert:
                 self._handle_detection_alert(detection_result, 0.0, 0.0)
 
+            self._maybe_update_live_status(
+                status=detection_result.status,
+                risk_level=detection_result.risk_level,
+                ear_value=0.0,
+                mar_value=0.0,
+            )
+
             return
 
         # Face detected - reset face_not_detected timer
@@ -529,6 +567,15 @@ class AppController:
                 ai_label=ai_label, ai_confidence=ai_confidence,
             )
 
+        self._maybe_update_live_status(
+            status=detection_result.status,
+            risk_level=detection_result.risk_level,
+            ear_value=ear_value,
+            mar_value=mar_value,
+            head_yaw=head_pose.yaw,
+            head_pitch=head_pose.pitch,
+        )
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
@@ -540,8 +587,67 @@ class AppController:
 
     def _cleanup_runtime(self) -> None:
         self.camera_timer.stop()
+        self.live_status_timer.stop()
         self._release_camera()
+        if self.state.current_user is not None:
+            self.live_status_service.mark_offline(driver_id=self.state.current_user.id)
         self.landmark_detector.close()
+
+    def _send_live_presence(self) -> None:
+        if self.state.current_user is None:
+            return
+
+        company_id = self.state.current_company.id if self.state.current_company else None
+        vehicle_id = self.state.current_vehicle.id if self.state.current_vehicle else None
+
+        if self.state.current_session is not None:
+            self.live_status_service.update_metrics(
+                driver_id=self.state.current_user.id,
+                session_id=self.state.current_session.id,
+                company_id=company_id,
+                vehicle_id=vehicle_id,
+                status=self._last_live_status,
+                risk_level=self._last_live_risk_level,
+            )
+            return
+
+        self.live_status_service.mark_online(
+            driver_id=self.state.current_user.id,
+            company_id=company_id,
+            vehicle_id=vehicle_id,
+        )
+
+    def _maybe_update_live_status(
+        self,
+        *,
+        status: str,
+        risk_level: str,
+        ear_value: Optional[float] = None,
+        mar_value: Optional[float] = None,
+        head_yaw: Optional[float] = None,
+        head_pitch: Optional[float] = None,
+    ) -> None:
+        now = time.monotonic()
+        if now - self._last_live_status_at < 2.0:
+            return
+        if self.state.current_user is None:
+            return
+
+        self._last_live_status_at = now
+        self._last_live_status = status
+        self._last_live_risk_level = risk_level
+        self.live_status_service.update_metrics(
+            driver_id=self.state.current_user.id,
+            session_id=self.state.current_session.id if self.state.current_session else None,
+            company_id=self.state.current_company.id if self.state.current_company else None,
+            vehicle_id=self.state.current_vehicle.id if self.state.current_vehicle else None,
+            status=status,
+            risk_level=risk_level,
+            ear_value=ear_value,
+            mar_value=mar_value,
+            head_yaw=head_yaw,
+            head_pitch=head_pitch,
+        )
 
     def _build_drowsiness_engine(self) -> DrowsinessEngine:
         settings_state = self.state.current_settings
@@ -618,6 +724,7 @@ class AppController:
         self._status_started_at = time.monotonic()
         self._last_alert_frame = -1000
         self._last_alert_type = None
+        self._last_live_status_at = 0.0
         self._distracted_since = None
         self._face_not_detected_since = None
         self._last_head_yaw = 0.0

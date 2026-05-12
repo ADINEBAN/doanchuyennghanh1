@@ -6,26 +6,32 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { DataTable, EmptyRow } from "@/components/ui/DataTable";
 import { StatCard } from "@/components/ui/StatCard";
 import { AlertTriangle, BarChart3, ShieldAlert } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { alertTypeLabel } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
 import type { Alert } from "@/types/database";
 
 export default function StatisticsPage() {
+  const { profile } = useAuth();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadAlerts() {
-      const { data } = await supabase
+      let query = supabase
         .from("alerts")
         .select("*")
         .order("triggered_at", { ascending: false })
         .limit(500);
+      if (profile?.role === "COMPANY_ADMIN" && profile.company_id) {
+        query = query.eq("company_id", profile.company_id);
+      }
+      const { data } = await query;
       setAlerts(data ?? []);
       setLoading(false);
     }
     void loadAlerts();
-  }, []);
+  }, [profile]);
 
   const byType = useMemo(() => {
     return alerts.reduce<Record<string, number>>((acc, alert) => {
