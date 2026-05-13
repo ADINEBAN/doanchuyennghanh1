@@ -134,6 +134,92 @@ export type DriverLiveStatus = {
   updated_at: string;
 };
 
+export type AIModel = {
+  id: string;
+  name: string;
+  version: string | null;
+  file_path: string;
+  file_format: "h5" | "keras" | "pt" | "onnx" | "tflite";
+  description: string | null;
+  accuracy: number | null;
+  precision_score: number | null;
+  recall_score: number | null;
+  f1_score: number | null;
+  num_classes: number | null;
+  class_labels: string | null;
+  is_default: boolean | null;
+  status: "active" | "inactive" | "testing";
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AIModelInsert = {
+  name: string;
+  version?: string | null;
+  file_path: string;
+  file_format?: AIModel["file_format"];
+  description?: string | null;
+  accuracy?: number | null;
+  precision_score?: number | null;
+  recall_score?: number | null;
+  f1_score?: number | null;
+  num_classes?: number | null;
+  class_labels?: string | null;
+  is_default?: boolean | null;
+  status?: AIModel["status"];
+  created_by?: string | null;
+};
+
+export type SystemSetting = {
+  id: string;
+  key: string;
+  value: string;
+  data_type: "string" | "int" | "float" | "boolean" | "json";
+  description: string | null;
+  updated_by: string | null;
+  updated_at: string;
+};
+
+export type UserSettings = {
+  id: string;
+  user_id: string;
+  ear_threshold: number;
+  ear_consec_frames: number;
+  mar_threshold: number;
+  yawn_consec_frames: number;
+  ai_prediction_interval: number;
+  drowsy_alert_seconds: number;
+  head_yaw_threshold: number;
+  head_pitch_threshold: number;
+  distraction_seconds: number;
+  face_not_detected_seconds: number;
+  selected_model_name: string | null;
+  alert_sound_enabled: boolean;
+  alert_sound_path: string | null;
+  camera_index: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type UserSettingsInsert = {
+  user_id: string;
+  ear_threshold?: number;
+  ear_consec_frames?: number;
+  mar_threshold?: number;
+  yawn_consec_frames?: number;
+  ai_prediction_interval?: number;
+  drowsy_alert_seconds?: number;
+  head_yaw_threshold?: number;
+  head_pitch_threshold?: number;
+  distraction_seconds?: number;
+  face_not_detected_seconds?: number;
+  selected_model_name?: string | null;
+  alert_sound_enabled?: boolean;
+  alert_sound_path?: string | null;
+  camera_index?: number;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -146,10 +232,16 @@ export type Database = {
         Update: Partial<MonitoringSession>;
       };
       alerts: { Row: Alert; Insert: Partial<Alert>; Update: Partial<Alert> };
+      ai_models: { Row: AIModel; Insert: AIModelInsert; Update: Partial<AIModelInsert> };
+      system_settings: {
+        Row: SystemSetting;
+        Insert: Partial<SystemSetting>;
+        Update: Partial<SystemSetting>;
+      };
       user_settings: {
-        Row: { id: string; user_id: string };
-        Insert: { user_id: string };
-        Update: { user_id?: string };
+        Row: UserSettings;
+        Insert: UserSettingsInsert;
+        Update: Partial<UserSettingsInsert>;
       };
       driver_live_status: {
         Row: DriverLiveStatus;

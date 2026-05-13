@@ -48,6 +48,20 @@ class SettingsWindow(QDialog):
         self.drowsy_alert_seconds = QSpinBox()
         self.drowsy_alert_seconds.setRange(1, 30)
 
+        self.head_yaw_threshold = QDoubleSpinBox()
+        self.head_yaw_threshold.setRange(1.0, 90.0)
+        self.head_yaw_threshold.setSingleStep(1.0)
+
+        self.head_pitch_threshold = QDoubleSpinBox()
+        self.head_pitch_threshold.setRange(1.0, 90.0)
+        self.head_pitch_threshold.setSingleStep(1.0)
+
+        self.distraction_seconds = QSpinBox()
+        self.distraction_seconds.setRange(1, 60)
+
+        self.face_not_detected_seconds = QSpinBox()
+        self.face_not_detected_seconds.setRange(1, 60)
+
         self.camera_index = QSpinBox()
         self.camera_index.setRange(0, 10)
 
@@ -69,6 +83,10 @@ class SettingsWindow(QDialog):
         form.addRow("Số frame ngáp", self.yawn_consec_frames)
         form.addRow("Chu kỳ dự đoán AI", self.ai_prediction_interval)
         form.addRow("Giây cảnh báo buồn ngủ", self.drowsy_alert_seconds)
+        form.addRow("Ngưỡng quay đầu ngang", self.head_yaw_threshold)
+        form.addRow("Ngưỡng cúi/ngửa đầu", self.head_pitch_threshold)
+        form.addRow("Giây mất tập trung", self.distraction_seconds)
+        form.addRow("Giây không thấy mặt", self.face_not_detected_seconds)
         form.addRow("Camera index", self.camera_index)
         form.addRow("Tên model", self.selected_model_name)
         form.addRow("Đường dẫn âm thanh", self.alert_sound_path)
@@ -102,6 +120,10 @@ class SettingsWindow(QDialog):
         self.yawn_consec_frames.setValue(settings_state.yawn_consec_frames)
         self.ai_prediction_interval.setValue(settings_state.ai_prediction_interval)
         self.drowsy_alert_seconds.setValue(settings_state.drowsy_alert_seconds)
+        self.head_yaw_threshold.setValue(settings_state.head_yaw_threshold)
+        self.head_pitch_threshold.setValue(settings_state.head_pitch_threshold)
+        self.distraction_seconds.setValue(settings_state.distraction_seconds)
+        self.face_not_detected_seconds.setValue(settings_state.face_not_detected_seconds)
         self.camera_index.setValue(settings_state.camera_index)
         self.selected_model_name.setText(settings_state.selected_model_name)
         self.alert_sound_path.setText(settings_state.alert_sound_path)
@@ -117,6 +139,10 @@ class SettingsWindow(QDialog):
                 yawn_consec_frames=self.yawn_consec_frames.value(),
                 ai_prediction_interval=self.ai_prediction_interval.value(),
                 drowsy_alert_seconds=self.drowsy_alert_seconds.value(),
+                head_yaw_threshold=self.head_yaw_threshold.value(),
+                head_pitch_threshold=self.head_pitch_threshold.value(),
+                distraction_seconds=self.distraction_seconds.value(),
+                face_not_detected_seconds=self.face_not_detected_seconds.value(),
                 selected_model_name=self.selected_model_name.text().strip(),
                 alert_sound_enabled=self.alert_sound_enabled.isChecked(),
                 alert_sound_path=self.alert_sound_path.text().strip(),

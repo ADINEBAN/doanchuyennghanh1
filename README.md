@@ -47,6 +47,24 @@ python -m venv .venv-train
 pip install -r requirements-train.txt
 ```
 
+Expected dataset layout:
+
+```text
+ml/datasets/raw/
+  normal/
+  closed_eyes/
+  yawning/
+  drowsy/
+```
+
+Prepare, train, and evaluate:
+
+```powershell
+python ml/training/preprocess_dataset.py --input ml/datasets/raw --output ml/datasets/processed
+python ml/training/train_model.py --dataset ml/datasets/processed --output ml/exported_models
+python ml/training/evaluate_model.py --model ml/exported_models/drowsiness_model.keras --dataset ml/datasets/processed/test
+```
+
 ## Run
 
 ```powershell
@@ -71,8 +89,8 @@ python -m app.main
 
 ## Supabase
 
-- Setup guide: [docs/supabase_setup.md](</e:\ĐỒ ÁN CHUYÊN NGÀNH 1\drowsiness_desktop_app\docs\supabase_setup.md>)
-- Database schema: [db/supabase_schema.sql](</e:\ĐỒ ÁN CHUYÊN NGÀNH 1\drowsiness_desktop_app\db\supabase_schema.sql>)
+- Setup guide: [docs/supabase_setup.md](docs/supabase_setup.md)
+- Database schema: [db/supabase_schema.sql](db/supabase_schema.sql)
 - Connection check:
 
 ```powershell

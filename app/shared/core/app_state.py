@@ -54,6 +54,10 @@ class UserSettingsState:
     yawn_consec_frames: int = 15
     ai_prediction_interval: int = 5
     drowsy_alert_seconds: int = 2
+    head_yaw_threshold: float = 30.0
+    head_pitch_threshold: float = 25.0
+    distraction_seconds: int = 3
+    face_not_detected_seconds: int = 5
     selected_model_name: str = ""
     alert_sound_enabled: bool = True
     alert_sound_path: str = "assets/sounds/alert.wav"

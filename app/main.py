@@ -31,12 +31,6 @@ from app.features.settings.ui import SettingsWindow
 from app.features.statistics.ui import StatisticsWindow
 from app.shared.config.constants import (
     APP_NAME,
-    DEFAULT_DISTRACTION_SECONDS,
-    DEFAULT_FACE_NOT_DETECTED_SECONDS,
-    DEFAULT_HEAD_PITCH_THRESHOLD,
-    DEFAULT_HEAD_YAW_THRESHOLD,
-    STATUS_DISTRACTED,
-    STATUS_FACE_NOT_DETECTED,
 )
 from app.shared.config.settings import load_settings
 from app.shared.core.app_state import AppState, UserSettingsState
@@ -658,6 +652,10 @@ class AppController:
                 mar_threshold=self.settings.mar_threshold,
                 yawn_consec_frames=self.settings.yawn_consec_frames,
                 drowsy_alert_seconds=self.settings.drowsy_alert_seconds,
+                head_yaw_threshold=self.settings.head_yaw_threshold,
+                head_pitch_threshold=self.settings.head_pitch_threshold,
+                distraction_seconds=self.settings.distraction_seconds,
+                face_not_detected_seconds=self.settings.face_not_detected_seconds,
             )
 
         return DrowsinessEngine(
@@ -666,6 +664,10 @@ class AppController:
             mar_threshold=settings_state.mar_threshold,
             yawn_consec_frames=settings_state.yawn_consec_frames,
             drowsy_alert_seconds=settings_state.drowsy_alert_seconds,
+            head_yaw_threshold=settings_state.head_yaw_threshold,
+            head_pitch_threshold=settings_state.head_pitch_threshold,
+            distraction_seconds=settings_state.distraction_seconds,
+            face_not_detected_seconds=settings_state.face_not_detected_seconds,
         )
 
     def _handle_detection_alert(

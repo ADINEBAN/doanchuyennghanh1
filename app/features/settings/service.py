@@ -25,6 +25,10 @@ class SettingsService:
                     yawn_consec_frames=self.app_settings.yawn_consec_frames,
                     ai_prediction_interval=self.app_settings.ai_prediction_interval,
                     drowsy_alert_seconds=self.app_settings.drowsy_alert_seconds,
+                    head_yaw_threshold=self.app_settings.head_yaw_threshold,
+                    head_pitch_threshold=self.app_settings.head_pitch_threshold,
+                    distraction_seconds=self.app_settings.distraction_seconds,
+                    face_not_detected_seconds=self.app_settings.face_not_detected_seconds,
                     alert_sound_path=self.app_settings.alert_sound_path,
                     camera_index=self.app_settings.default_camera_index,
                 ),
@@ -51,6 +55,18 @@ class SettingsService:
             drowsy_alert_seconds=row.get(
                 "drowsy_alert_seconds", self.app_settings.drowsy_alert_seconds
             ),
+            head_yaw_threshold=row.get(
+                "head_yaw_threshold", self.app_settings.head_yaw_threshold
+            ),
+            head_pitch_threshold=row.get(
+                "head_pitch_threshold", self.app_settings.head_pitch_threshold
+            ),
+            distraction_seconds=row.get(
+                "distraction_seconds", self.app_settings.distraction_seconds
+            ),
+            face_not_detected_seconds=row.get(
+                "face_not_detected_seconds", self.app_settings.face_not_detected_seconds
+            ),
             selected_model_name=row.get("selected_model_name", ""),
             alert_sound_enabled=row.get("alert_sound_enabled", True),
             alert_sound_path=row.get("alert_sound_path", self.app_settings.alert_sound_path),
@@ -70,6 +86,10 @@ class SettingsService:
             "yawn_consec_frames": settings_state.yawn_consec_frames,
             "ai_prediction_interval": settings_state.ai_prediction_interval,
             "drowsy_alert_seconds": settings_state.drowsy_alert_seconds,
+            "head_yaw_threshold": settings_state.head_yaw_threshold,
+            "head_pitch_threshold": settings_state.head_pitch_threshold,
+            "distraction_seconds": settings_state.distraction_seconds,
+            "face_not_detected_seconds": settings_state.face_not_detected_seconds,
             "selected_model_name": settings_state.selected_model_name,
             "alert_sound_enabled": settings_state.alert_sound_enabled,
             "alert_sound_path": settings_state.alert_sound_path,

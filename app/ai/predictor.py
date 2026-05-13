@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional, Union
@@ -31,10 +32,11 @@ class DrowsinessPredictor:
         self,
         model_path: Union[str, Path],
         labels: Optional[list[str]] = None,
-        input_size: tuple[int, int] = (64, 64),
+        input_size: tuple[int, int] = (160, 160),
     ) -> None:
-        self.model_path = str(model_path)
-        self.labels = labels or list(DEFAULT_LABELS)
+        resolved_model_path = Path(model_path)
+        self.model_path = str(resolved_model_path)
+        self.labels = labels or self._load_labels(resolved_model_path)
         self.input_size = input_size
         self.model: Any = load_model(model_path)
         self._is_onnx = self.model is not None and hasattr(self.model, "run")
@@ -90,3 +92,15 @@ class DrowsinessPredictor:
         confidence = float(predictions[0][idx])
         label = self.labels[idx] if idx < len(self.labels) else "unknown"
         return PredictionResult(label=label, confidence=confidence)
+
+    @staticmethod
+    def _load_labels(model_path: Path) -> list[str]:
+        labels_path = model_path.with_name("labels.json")
+        if labels_path.exists():
+            try:
+                labels = json.loads(labels_path.read_text(encoding="utf-8"))
+                if isinstance(labels, list) and all(isinstance(item, str) for item in labels):
+                    return labels
+            except Exception as exc:
+                LOGGER.warning("Failed to load labels from %s: %s", labels_path, exc)
+        return list(DEFAULT_LABELS)

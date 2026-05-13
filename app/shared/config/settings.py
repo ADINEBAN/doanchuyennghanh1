@@ -59,6 +59,10 @@ class AppSettings:
     yawn_consec_frames: int = 15
     ai_prediction_interval: int = 5
     drowsy_alert_seconds: int = 2
+    head_yaw_threshold: float = 30.0
+    head_pitch_threshold: float = 25.0
+    distraction_seconds: int = 3
+    face_not_detected_seconds: int = 5
     alert_sound_path: str = "assets/sounds/alert.wav"
 
     @property
@@ -93,5 +97,9 @@ def load_settings(env_file: str = ".env") -> AppSettings:
         yawn_consec_frames=_get_int("YAWN_CONSEC_FRAMES", 15),
         ai_prediction_interval=_get_int("AI_PREDICTION_INTERVAL", 5),
         drowsy_alert_seconds=_get_int("DROWSY_ALERT_SECONDS", 2),
+        head_yaw_threshold=_get_float("HEAD_YAW_THRESHOLD", 30.0),
+        head_pitch_threshold=_get_float("HEAD_PITCH_THRESHOLD", 25.0),
+        distraction_seconds=_get_int("DISTRACTION_SECONDS", 3),
+        face_not_detected_seconds=_get_int("FACE_NOT_DETECTED_SECONDS", 5),
         alert_sound_path=os.getenv("ALERT_SOUND_PATH", "assets/sounds/alert.wav"),
     )
