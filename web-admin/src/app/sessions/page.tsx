@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/ui/Badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatDateTime, formatDuration } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
+import { useCachedState } from "@/hooks/useCachedState";
 import type { MonitoringSession, Profile, SessionStatus } from "@/types/database";
 
 const sessionStatuses: Array<{ value: SessionStatus; label: string }> = [
@@ -18,9 +19,10 @@ const sessionStatuses: Array<{ value: SessionStatus; label: string }> = [
 
 export default function SessionsPage() {
   const { profile } = useAuth();
-  const [sessions, setSessions] = useState<MonitoringSession[]>([]);
-  const [drivers, setDrivers] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cacheScope = profile?.id ?? "guest";
+  const [sessions, setSessions, hadSessions] = useCachedState<MonitoringSession[]>(`web-admin:${cacheScope}:sessions:list`, []);
+  const [drivers, setDrivers, hadDrivers] = useCachedState<Profile[]>(`web-admin:${cacheScope}:sessions:drivers`, []);
+  const [loading, setLoading] = useState(!(hadSessions || hadDrivers));
   const [driverId, setDriverId] = useState("");
   const [status, setStatus] = useState("");
   const [fromDate, setFromDate] = useState("");
@@ -44,7 +46,7 @@ export default function SessionsPage() {
     const { data } = await query;
     setSessions(data ?? []);
     setLoading(false);
-  }, [driverId, fromDate, profile, status, toDate]);
+  }, [driverId, fromDate, profile, setSessions, status, toDate]);
 
   const loadDrivers = useCallback(async () => {
     let query = supabase.from("profiles").select("*").eq("role", "DRIVER").order("full_name");
@@ -53,7 +55,7 @@ export default function SessionsPage() {
     }
     const { data } = await query;
     setDrivers(data ?? []);
-  }, [profile]);
+  }, [profile, setDrivers]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { roleLabel } from "@/lib/format";
 import { getDriverPresence, LIVE_STATUS_POLL_MS } from "@/lib/live-status";
 import { supabase } from "@/lib/supabase";
+import { useCachedState } from "@/hooks/useCachedState";
 import type { Company, DriverLiveStatus, Profile, UserRole } from "@/types/database";
 
 type AccountForm = {
@@ -32,11 +33,12 @@ const emptyForm: AccountForm = {
 
 export default function DriversPage() {
   const { profile, session } = useAuth();
-  const [users, setUsers] = useState<Profile[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [liveStatuses, setLiveStatuses] = useState<DriverLiveStatus[]>([]);
+  const cacheScope = profile?.id ?? "guest";
+  const [users, setUsers, hadUsers] = useCachedState<Profile[]>(`web-admin:${cacheScope}:drivers:users`, []);
+  const [companies, setCompanies, hadCompanies] = useCachedState<Company[]>(`web-admin:${cacheScope}:drivers:companies`, []);
+  const [liveStatuses, setLiveStatuses, hadLiveStatuses] = useCachedState<DriverLiveStatus[]>(`web-admin:${cacheScope}:drivers:live-statuses`, []);
   const [currentTime, setCurrentTime] = useState(() => Date.now());
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!(hadUsers || hadCompanies || hadLiveStatuses));
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -62,7 +64,7 @@ export default function DriversPage() {
     } finally {
       isLoadingLiveRef.current = false;
     }
-  }, [profile]);
+  }, [profile, setLiveStatuses]);
 
   const loadData = useCallback(async () => {
     try {
@@ -85,7 +87,7 @@ export default function DriversPage() {
     } finally {
       setLoading(false);
     }
-  }, [loadLiveStatuses, profile]);
+  }, [loadLiveStatuses, profile, setCompanies, setUsers]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

@@ -1,4 +1,8 @@
 # Drowsiness Desktop App
+python -m app.main
+
+cd web-admin
+npm.cmd run dev
 
 Desktop application scaffold for a driver drowsiness warning system built with Python, PyQt6, OpenCV, MediaPipe, and Supabase.
 

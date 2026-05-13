@@ -9,12 +9,14 @@ import { AlertTriangle, BarChart3, ShieldAlert } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { alertTypeLabel } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
+import { useCachedState } from "@/hooks/useCachedState";
 import type { Alert } from "@/types/database";
 
 export default function StatisticsPage() {
   const { profile } = useAuth();
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cacheScope = profile?.id ?? "guest";
+  const [alerts, setAlerts, hadAlerts] = useCachedState<Alert[]>(`web-admin:${cacheScope}:statistics:alerts`, []);
+  const [loading, setLoading] = useState(!hadAlerts);
 
   useEffect(() => {
     async function loadAlerts() {
@@ -31,7 +33,7 @@ export default function StatisticsPage() {
       setLoading(false);
     }
     void loadAlerts();
-  }, [profile]);
+  }, [profile, setAlerts]);
 
   const byType = useMemo(() => {
     return alerts.reduce<Record<string, number>>((acc, alert) => {

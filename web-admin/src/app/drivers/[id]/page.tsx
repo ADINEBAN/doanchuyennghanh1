@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { alertTypeLabel, formatDateTime, formatDuration } from "@/lib/format";
 import { getDriverPresence, LIVE_STATUS_POLL_MS } from "@/lib/live-status";
 import { supabase } from "@/lib/supabase";
+import { useCachedState } from "@/hooks/useCachedState";
 import type { Alert, DriverLiveStatus, MonitoringSession, Profile, Vehicle } from "@/types/database";
 
 type DriverDetailParams = {
@@ -21,13 +22,14 @@ type DriverDetailParams = {
 export default function DriverDetailPage({ params }: DriverDetailParams) {
   const { id } = use(params);
   const { profile } = useAuth();
-  const [driver, setDriver] = useState<Profile | null>(null);
-  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
-  const [live, setLive] = useState<DriverLiveStatus | null>(null);
-  const [sessions, setSessions] = useState<MonitoringSession[]>([]);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const cacheScope = `${profile?.id ?? "guest"}:${id}`;
+  const [driver, setDriver, hadDriver] = useCachedState<Profile | null>(`web-admin:${cacheScope}:driver-detail:driver`, null);
+  const [vehicle, setVehicle, hadVehicle] = useCachedState<Vehicle | null>(`web-admin:${cacheScope}:driver-detail:vehicle`, null);
+  const [live, setLive, hadLive] = useCachedState<DriverLiveStatus | null>(`web-admin:${cacheScope}:driver-detail:live`, null);
+  const [sessions, setSessions, hadSessions] = useCachedState<MonitoringSession[]>(`web-admin:${cacheScope}:driver-detail:sessions`, []);
+  const [alerts, setAlerts, hadAlerts] = useCachedState<Alert[]>(`web-admin:${cacheScope}:driver-detail:alerts`, []);
   const [currentTime, setCurrentTime] = useState(() => Date.now());
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!(hadDriver || hadVehicle || hadLive || hadSessions || hadAlerts));
   const isLoadingRef = useRef(false);
 
   const loadDriver = useCallback(async () => {
@@ -77,7 +79,7 @@ export default function DriverDetailPage({ params }: DriverDetailParams) {
       isLoadingRef.current = false;
       setLoading(false);
     }
-  }, [id, profile]);
+  }, [id, profile, setAlerts, setDriver, setLive, setSessions, setVehicle]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

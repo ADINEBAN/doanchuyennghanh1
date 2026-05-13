@@ -7,6 +7,7 @@ import { DataTable, EmptyRow } from "@/components/ui/DataTable";
 import { StatusBadge } from "@/components/ui/Badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { useCachedState } from "@/hooks/useCachedState";
 import type { Company, Profile, Vehicle, VehicleStatus } from "@/types/database";
 
 type VehicleForm = {
@@ -34,10 +35,11 @@ const emptyForm: VehicleForm = {
 
 export default function VehiclesPage() {
   const { profile } = useAuth();
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [drivers, setDrivers] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cacheScope = profile?.id ?? "guest";
+  const [vehicles, setVehicles, hadVehicles] = useCachedState<Vehicle[]>(`web-admin:${cacheScope}:vehicles:list`, []);
+  const [companies, setCompanies, hadCompanies] = useCachedState<Company[]>(`web-admin:${cacheScope}:vehicles:companies`, []);
+  const [drivers, setDrivers, hadDrivers] = useCachedState<Profile[]>(`web-admin:${cacheScope}:vehicles:drivers`, []);
+  const [loading, setLoading] = useState(!(hadVehicles || hadCompanies || hadDrivers));
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -59,7 +61,7 @@ export default function VehiclesPage() {
     setCompanies(companyRows.data ?? []);
     setDrivers(driverRows.data ?? []);
     setLoading(false);
-  }, [profile]);
+  }, [profile, setCompanies, setDrivers, setVehicles]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

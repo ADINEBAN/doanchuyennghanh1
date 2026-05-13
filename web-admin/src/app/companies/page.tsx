@@ -1,11 +1,13 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { AdminShell } from "@/components/layout/AdminShell";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { DataTable, EmptyRow } from "@/components/ui/DataTable";
 import { StatusBadge } from "@/components/ui/Badge";
 import { supabase } from "@/lib/supabase";
+import { useCachedState } from "@/hooks/useCachedState";
+import { useAuth } from "@/contexts/AuthContext";
 import type { Company } from "@/types/database";
 
 type CompanyForm = {
@@ -26,28 +28,30 @@ const emptyForm: CompanyForm = {
 };
 
 export default function CompaniesPage() {
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { profile } = useAuth();
+  const cacheScope = profile?.id ?? "guest";
+  const [companies, setCompanies, hadCachedCompanies] = useCachedState<Company[]>(`web-admin:${cacheScope}:companies:list`, []);
+  const [loading, setLoading] = useState(!hadCachedCompanies);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState<CompanyForm>(emptyForm);
 
-  async function loadCompanies() {
+  const loadCompanies = useCallback(async () => {
     const { data } = await supabase
       .from("companies")
       .select("*")
       .order("created_at", { ascending: false });
     setCompanies(data ?? []);
     setLoading(false);
-  }
+  }, [setCompanies]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void loadCompanies();
     }, 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [loadCompanies]);
 
   function openCreateForm() {
     setForm(emptyForm);

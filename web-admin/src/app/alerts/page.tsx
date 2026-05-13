@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/ui/Badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { alertTypeLabel, formatDateTime } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
+import { useCachedState } from "@/hooks/useCachedState";
 import type { Alert, AlertType, Profile, RiskLevel } from "@/types/database";
 
 const alertTypes: Array<{ value: AlertType; label: string }> = [
@@ -27,9 +28,10 @@ const riskLevels: Array<{ value: RiskLevel; label: string }> = [
 
 export default function AlertsPage() {
   const { profile } = useAuth();
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [drivers, setDrivers] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cacheScope = profile?.id ?? "guest";
+  const [alerts, setAlerts, hadAlerts] = useCachedState<Alert[]>(`web-admin:${cacheScope}:alerts:list`, []);
+  const [drivers, setDrivers, hadDrivers] = useCachedState<Profile[]>(`web-admin:${cacheScope}:alerts:drivers`, []);
+  const [loading, setLoading] = useState(!(hadAlerts || hadDrivers));
   const [driverId, setDriverId] = useState("");
   const [alertType, setAlertType] = useState("");
   const [riskLevel, setRiskLevel] = useState("");
@@ -55,7 +57,7 @@ export default function AlertsPage() {
     const { data } = await query;
     setAlerts(data ?? []);
     setLoading(false);
-  }, [alertType, driverId, fromDate, profile, riskLevel, toDate]);
+  }, [alertType, driverId, fromDate, profile, riskLevel, setAlerts, toDate]);
 
   const loadDrivers = useCallback(async () => {
     let query = supabase.from("profiles").select("*").eq("role", "DRIVER").order("full_name");
@@ -64,7 +66,7 @@ export default function AlertsPage() {
     }
     const { data } = await query;
     setDrivers(data ?? []);
-  }, [profile]);
+  }, [profile, setDrivers]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

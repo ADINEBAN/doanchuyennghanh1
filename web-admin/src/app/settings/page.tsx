@@ -8,6 +8,7 @@ import { DataTable, EmptyRow } from "@/components/ui/DataTable";
 import { StatusBadge } from "@/components/ui/Badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { useCachedState } from "@/hooks/useCachedState";
 import type { AIModel, SystemSetting } from "@/types/database";
 
 type ModelForm = {
@@ -26,11 +27,12 @@ const defaultModelForm: ModelForm = {
 
 export default function SettingsPage() {
   const { profile } = useAuth();
-  const [settings, setSettings] = useState<SystemSetting[]>([]);
-  const [models, setModels] = useState<AIModel[]>([]);
+  const cacheScope = profile?.id ?? "guest";
+  const [settings, setSettings, hadSettings] = useCachedState<SystemSetting[]>(`web-admin:${cacheScope}:settings:system`, []);
+  const [models, setModels, hadModels] = useCachedState<AIModel[]>(`web-admin:${cacheScope}:settings:models`, []);
   const [modelForm, setModelForm] = useState<ModelForm>(defaultModelForm);
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!(hadSettings || hadModels));
   const isSuperAdmin = profile?.role === "SUPER_ADMIN";
 
   const loadSettings = useCallback(async () => {
@@ -46,7 +48,7 @@ export default function SettingsPage() {
     setSettings(settingRows.data ?? []);
     setModels(modelRows.data ?? []);
     setLoading(false);
-  }, [isSuperAdmin]);
+  }, [isSuperAdmin, setModels, setSettings]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
